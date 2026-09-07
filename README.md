@@ -1,4 +1,4 @@
-# 📚 NISM RAG Assistant — Retrieval-Augmented Generation with LangChain & ChromaDB
+# 📚 RAG-FLOW Assistant — Retrieval-Augmented Generation with LangChain & ChromaDB
 
 A complete **Retrieval-Augmented Generation (RAG)** application for asking questions from NISM PDF documents.
 
