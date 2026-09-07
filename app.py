@@ -34,7 +34,7 @@ load_dotenv()
 # ============================================================
 
 st.set_page_config(
-    page_title="NISM RAG Assistant",
+    page_title="RAG-FLOW Assistant",
     page_icon="📚",
     layout="wide",
 )
