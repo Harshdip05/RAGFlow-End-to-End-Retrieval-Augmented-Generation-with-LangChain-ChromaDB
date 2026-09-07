@@ -1,0 +1,160 @@
+# ================================
+# Python
+# ================================
+
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+rag_venv
+rag_venv/
+.rag_venv
+.rag_venv/
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# ================================
+# Environment & Secrets
+# ================================
+
+env
+.env
+.env.*
+!.env.example
+
+# API keys / secrets
+*.pem
+*.key
+secrets/
+credentials/
+
+# ================================
+# Jupyter Notebook
+# ================================
+
+.ipynb_checkpoints/
+
+# Jupyter temporary files
+*.ipynb_checkpoints
+
+# ================================
+# RAG / Vector Database
+# ================================
+
+# ChromaDB persistent storage
+chroma_db/
+chromadb/
+.chroma/
+chroma/
+
+# Vector database files
+*.sqlite
+*.sqlite3
+*.db
+
+# ================================
+# Generated / Temporary Files
+# ================================
+
+*.log
+*.tmp
+*.temp
+tmp/
+temp/
+.cache/
+.cache/
+
+# ================================
+# OS Files
+# ================================
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+Desktop.ini
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Linux
+*~
+
+# ================================
+# IDEs & Editors
+# ================================
+
+# VS Code
+.vscode/
+
+# PyCharm
+.idea/
+
+# JupyterLab
+.jupyter/
+
+# ================================
+# Testing / Coverage
+# ================================
+
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+
+# ================================
+# Type Checking / Linters
+# ================================
+
+.mypy_cache/
+.pyright/
+.ruff_cache/
+
+# ================================
+# UV
+# ================================
+
+# Keep uv.lock committed for reproducible environments
+# uv.lock
+
+# ================================
+# Local Project Data
+# ================================
+
+# Generated embeddings / indexes
+embeddings/
+indexes/
+vector_store/
+vectorstore/
+
+# Local outputs
+outputs/
+results/
+
+# ================================
+# Large / Generated Files
+# ================================
+
+*.zip
+*.tar
+*.gz
+
+# ================================
+# Secrets / Local Configuration
+# ================================
+
+config.local.*
+settings.local.*
