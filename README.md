@@ -9,7 +9,7 @@ Instead of asking an LLM to answer questions only from its pretrained knowledge,
 ---
 
 ## 🚀 Project Overview
-The **NISM RAG Assistant** allows users to:
+The **RAG-FLOW Assistant** allows users to:
 
 * 📄 Upload NISM PDF documents
 * 🔍 Automatically process and index PDF documents
