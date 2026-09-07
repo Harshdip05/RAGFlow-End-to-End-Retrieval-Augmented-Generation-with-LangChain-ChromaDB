@@ -9,7 +9,6 @@ Instead of asking an LLM to answer questions only from its pretrained knowledge,
 ---
 
 ## 🚀 Project Overview
-
 The **NISM RAG Assistant** allows users to:
 
 * 📄 Upload NISM PDF documents
@@ -27,6 +26,21 @@ The **NISM RAG Assistant** allows users to:
 * 📊 View indexed document information
 
 The main goal is to build a practical RAG pipeline that can be used as a **study assistant for NISM-related PDF content**.
+
+---
+
+## 🖥️ Application Preview
+
+The application provides a Streamlit-based interface for interacting with
+the uploaded NISM documents.
+
+### Chat Interface
+
+![NISM RAG Chat Interface](screenshots/chat-interface.png)
+
+Users can ask questions about the uploaded NISM documents and receive
+answers based on the retrieved document context.
+
 
 ---
 
