@@ -36,7 +36,7 @@ the uploaded NISM documents.
 
 ### Chat Interface
 
-![NISM RAG Chat Interface](screenshots/chat-interface.png)
+![NISM RAG Chat Interface](screenshots/chat_interface.png)
 
 Users can ask questions about the uploaded NISM documents and receive
 answers based on the retrieved document context.
