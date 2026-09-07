@@ -15,7 +15,23 @@ from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 # CONFIGURATION
 # ============================================================
 
+# Load variables from .env when running locally.
+#
+# Local:
+#     .env
+#     OPENAI_API_KEY=your_key
+#
+# Streamlit Cloud:
+#     st.secrets["OPENAI_API_KEY"]
+#
+# This allows the same application to work both locally
+# and after deployment.
 load_dotenv()
+
+
+# ============================================================
+# STREAMLIT PAGE CONFIGURATION
+# ============================================================
 
 st.set_page_config(
     page_title="NISM RAG Assistant",
@@ -24,6 +40,10 @@ st.set_page_config(
 )
 
 
+# ============================================================
+# PROJECT DIRECTORIES
+# ============================================================
+
 DOCS_DIR = Path("Docs")
 VECTOR_STORE_DIR = Path("vector_store")
 
@@ -31,12 +51,47 @@ DOCS_DIR.mkdir(exist_ok=True)
 VECTOR_STORE_DIR.mkdir(exist_ok=True)
 
 
+# ============================================================
+# MODEL CONFIGURATION
+# ============================================================
+
 EMBEDDING_MODEL = "text-embedding-3-small"
 LLM_MODEL = "gpt-5-nano"
 
 CHUNK_SIZE = 1000
 CHUNK_OVERLAP = 100
+
 DEFAULT_K = 3
+
+
+# ============================================================
+# API KEY CONFIGURATION
+# ============================================================
+
+# First try to get the API key from Streamlit Secrets.
+#
+# This is used when the application is deployed on
+# Streamlit Community Cloud.
+#
+# Example Streamlit Secret:
+#
+# OPENAI_API_KEY = "sk-xxxxxxxxxxxxxxxx"
+#
+# If Streamlit Secrets are not available, the application
+# will continue using the value loaded from .env.
+
+try:
+
+    if "OPENAI_API_KEY" in st.secrets:
+
+        os.environ["OPENAI_API_KEY"] = (
+            st.secrets["OPENAI_API_KEY"]
+        )
+
+except Exception:
+    # st.secrets may not be configured when running locally.
+    # In that case, continue using the .env value.
+    pass
 
 
 # ============================================================
@@ -46,8 +101,9 @@ DEFAULT_K = 3
 if not os.getenv("OPENAI_API_KEY"):
 
     st.error(
-        "OPENAI_API_KEY is not configured. "
-        "Please add it to your .env file."
+        "OPENAI_API_KEY is not configured.\n\n"
+        "For local development, add it to your .env file.\n"
+        "For Streamlit Cloud, add it to App Settings → Secrets."
     )
 
     st.stop()
@@ -58,9 +114,12 @@ if not os.getenv("OPENAI_API_KEY"):
 # ============================================================
 
 if "messages" not in st.session_state:
+
     st.session_state.messages = []
 
+
 if "retrieval_k" not in st.session_state:
+
     st.session_state.retrieval_k = DEFAULT_K
 
 
@@ -111,6 +170,7 @@ st.markdown(
 # ============================================================
 # HELPER FUNCTIONS
 # ============================================================
+
 
 @st.cache_resource
 def get_embeddings():
@@ -176,19 +236,27 @@ def load_and_split_pdf(
 
     documents = loader.load()
 
-
+    # --------------------------------------------------------
     # Add metadata BEFORE splitting
+    # --------------------------------------------------------
 
     for document in documents:
 
-        document.metadata["source"] = file_path.name
+        document.metadata["source"] = (
+            file_path.name
+        )
 
-        document.metadata["document_id"] = document_id
+        document.metadata["document_id"] = (
+            document_id
+        )
 
         document.metadata["page"] = (
             document.metadata.get("page", 0) + 1
         )
 
+    # --------------------------------------------------------
+    # Split documents into chunks
+    # --------------------------------------------------------
 
     splitter = RecursiveCharacterTextSplitter(
         chunk_size=CHUNK_SIZE,
@@ -232,6 +300,7 @@ def get_indexed_document_ids():
                 )
 
                 if document_id:
+
                     document_ids.add(
                         document_id
                     )
@@ -251,9 +320,17 @@ def add_pdf_to_vectorstore(
     Add one PDF to Chroma.
     """
 
+    # --------------------------------------------------------
+    # Generate SHA-256 hash
+    # --------------------------------------------------------
+
     file_hash = get_file_hash(
         file_path
     )
+
+    # --------------------------------------------------------
+    # Check whether document already exists
+    # --------------------------------------------------------
 
     indexed_ids = get_indexed_document_ids()
 
@@ -264,12 +341,14 @@ def add_pdf_to_vectorstore(
             "chunks": 0,
         }
 
+    # --------------------------------------------------------
+    # Load and split PDF
+    # --------------------------------------------------------
 
     chunks = load_and_split_pdf(
         file_path,
         file_hash,
     )
-
 
     if not chunks:
 
@@ -278,13 +357,15 @@ def add_pdf_to_vectorstore(
             "chunks": 0,
         }
 
+    # --------------------------------------------------------
+    # Add chunks to ChromaDB
+    # --------------------------------------------------------
 
     vectorstore = get_vectorstore()
 
     vectorstore.add_documents(
         documents=chunks
     )
-
 
     return {
         "status": "added",
@@ -296,6 +377,11 @@ def retrieve_documents(
     question: str,
     k: int,
 ):
+
+    """
+    Retrieve the most relevant document chunks
+    from ChromaDB.
+    """
 
     vectorstore = get_vectorstore()
 
@@ -312,6 +398,11 @@ def generate_answer(
     documents,
 ):
 
+    """
+    Generate an answer using only the retrieved
+    document context.
+    """
+
     if not documents:
 
         return (
@@ -319,6 +410,9 @@ def generate_answer(
             "about this question in the uploaded documents."
         )
 
+    # --------------------------------------------------------
+    # Build context
+    # --------------------------------------------------------
 
     context_parts = []
 
@@ -343,11 +437,13 @@ PAGE: {page}
 """
         )
 
-
     context = "\n\n".join(
         context_parts
     )
 
+    # --------------------------------------------------------
+    # Build RAG prompt
+    # --------------------------------------------------------
 
     prompt = f"""
 You are a helpful NISM study assistant.
@@ -374,6 +470,9 @@ USER QUESTION:
 ANSWER:
 """
 
+    # --------------------------------------------------------
+    # Generate answer using OpenAI
+    # --------------------------------------------------------
 
     response = get_llm().invoke(
         prompt
@@ -424,7 +523,6 @@ with st.sidebar:
 
     st.divider()
 
-
     page = st.radio(
         "Navigation",
         [
@@ -435,9 +533,7 @@ with st.sidebar:
         ],
     )
 
-
     st.divider()
-
 
     st.markdown("### Knowledge Base")
 
@@ -450,7 +546,6 @@ with st.sidebar:
         "Indexed Chunks",
         get_chunk_count(),
     )
-
 
     st.divider()
 
@@ -479,13 +574,11 @@ if page == "💬 Chat":
         unsafe_allow_html=True,
     )
 
-
     # --------------------------------------------------------
     # Statistics
     # --------------------------------------------------------
 
     col1, col2, col3 = st.columns(3)
-
 
     with col1:
 
@@ -503,7 +596,6 @@ if page == "💬 Chat":
             unsafe_allow_html=True,
         )
 
-
     with col2:
 
         st.markdown(
@@ -519,7 +611,6 @@ if page == "💬 Chat":
             """,
             unsafe_allow_html=True,
         )
-
 
     with col3:
 
@@ -537,9 +628,7 @@ if page == "💬 Chat":
             unsafe_allow_html=True,
         )
 
-
     st.divider()
-
 
     # --------------------------------------------------------
     # Existing chat messages
@@ -555,7 +644,6 @@ if page == "💬 Chat":
                 message["content"]
             )
 
-
     # --------------------------------------------------------
     # User question
     # --------------------------------------------------------
@@ -563,7 +651,6 @@ if page == "💬 Chat":
     question = st.chat_input(
         "Ask something about your NISM documents..."
     )
-
 
     if question:
 
@@ -576,13 +663,13 @@ if page == "💬 Chat":
             }
         )
 
-
         with st.chat_message("user"):
 
             st.markdown(question)
 
-
+        # ----------------------------------------------------
         # Generate answer
+        # ----------------------------------------------------
 
         with st.chat_message("assistant"):
 
@@ -597,15 +684,12 @@ if page == "💬 Chat":
                         st.session_state.retrieval_k,
                     )
 
-
                     answer = generate_answer(
                         question,
                         documents,
                     )
 
-
                     st.markdown(answer)
-
 
                     # ----------------------------------------
                     # Sources
@@ -616,7 +700,6 @@ if page == "💬 Chat":
                         st.markdown(
                             "### 📚 Sources"
                         )
-
 
                         for index, document in enumerate(
                             documents,
@@ -633,7 +716,6 @@ if page == "💬 Chat":
                                 "Unknown",
                             )
 
-
                             with st.expander(
                                 f"📄 {source} — Page {page_number}"
                             ):
@@ -641,7 +723,6 @@ if page == "💬 Chat":
                                 st.write(
                                     document.page_content
                                 )
-
 
                 except Exception as error:
 
@@ -653,7 +734,6 @@ if page == "💬 Chat":
                     st.error(
                         f"{answer}\n\n{error}"
                     )
-
 
         st.session_state.messages.append(
             {
@@ -676,20 +756,17 @@ elif page == "📤 Add PDF":
         "existing Chroma knowledge base."
     )
 
-
     uploaded_files = st.file_uploader(
         "Choose PDF files",
         type=["pdf"],
         accept_multiple_files=True,
     )
 
-
     if uploaded_files:
 
         st.subheader(
             "Selected documents"
         )
-
 
         for uploaded_file in uploaded_files:
 
@@ -699,9 +776,7 @@ elif page == "📤 Add PDF":
                 f"{uploaded_file.size / 1024:.1f} KB"
             )
 
-
         st.divider()
-
 
         if st.button(
             "🚀 Add to Knowledge Base",
@@ -713,11 +788,9 @@ elif page == "📤 Add PDF":
 
             status = st.empty()
 
-
             total = len(
                 uploaded_files
             )
-
 
             for index, uploaded_file in enumerate(
                 uploaded_files
@@ -726,7 +799,6 @@ elif page == "📤 Add PDF":
                 status.info(
                     f"Processing {uploaded_file.name}..."
                 )
-
 
                 # --------------------------------------------
                 # Save uploaded PDF
@@ -737,7 +809,6 @@ elif page == "📤 Add PDF":
                     uploaded_file.name
                 )
 
-
                 with open(
                     file_path,
                     "wb",
@@ -746,7 +817,6 @@ elif page == "📤 Add PDF":
                     file.write(
                         uploaded_file.getbuffer()
                     )
-
 
                 # --------------------------------------------
                 # Add to Chroma
@@ -758,7 +828,6 @@ elif page == "📤 Add PDF":
                         file_path
                     )
 
-
                     if result["status"] == "added":
 
                         st.success(
@@ -767,14 +836,12 @@ elif page == "📤 Add PDF":
                             f"{result['chunks']} chunks indexed."
                         )
 
-
                     elif result["status"] == "exists":
 
                         st.info(
                             f"ℹ️ {uploaded_file.name} "
                             f"is already indexed."
                         )
-
 
                     elif result["status"] == "empty":
 
@@ -783,7 +850,6 @@ elif page == "📤 Add PDF":
                             f"does not contain readable text."
                         )
 
-
                 except Exception as error:
 
                     st.error(
@@ -791,11 +857,9 @@ elif page == "📤 Add PDF":
                         f"{uploaded_file.name}: {error}"
                     )
 
-
                 progress.progress(
                     (index + 1) / total
                 )
-
 
             status.success(
                 "🎉 Processing completed!"
@@ -816,11 +880,9 @@ elif page == "📚 Documents":
         "PDF files currently stored in your Docs folder."
     )
 
-
     pdf_files = list(
         DOCS_DIR.glob("*.pdf")
     )
-
 
     if not pdf_files:
 
@@ -828,13 +890,11 @@ elif page == "📚 Documents":
             "No PDF documents found."
         )
 
-
     else:
 
         st.write(
             f"### {len(pdf_files)} document(s)"
         )
-
 
         for pdf_file in pdf_files:
 
@@ -845,7 +905,6 @@ elif page == "📚 Documents":
                 col1, col2 = st.columns(
                     [5, 2]
                 )
-
 
                 with col1:
 
@@ -858,13 +917,11 @@ elif page == "📚 Documents":
                         f"{pdf_file.stat().st_size / 1024:.1f} KB"
                     )
 
-
                 with col2:
 
                     st.write(
                         "Indexed"
                     )
-
 
                     st.write(
                         "PDF document"
@@ -879,11 +936,9 @@ elif page == "⚙️ Settings":
 
     st.title("⚙️ Settings")
 
-
     st.subheader(
         "Retrieval Settings"
     )
-
 
     st.session_state.retrieval_k = st.slider(
         "Number of chunks to retrieve",
@@ -892,15 +947,12 @@ elif page == "⚙️ Settings":
         value=st.session_state.retrieval_k,
     )
 
-
     st.caption(
         "Higher values provide more context to the LLM "
         "but may increase prompt size."
     )
 
-
     st.divider()
-
 
     st.subheader(
         "Embedding Model"
@@ -910,7 +962,6 @@ elif page == "⚙️ Settings":
         EMBEDDING_MODEL
     )
 
-
     st.subheader(
         "Language Model"
     )
@@ -919,17 +970,13 @@ elif page == "⚙️ Settings":
         LLM_MODEL
     )
 
-
     st.divider()
-
 
     st.subheader(
         "Chunking Configuration"
     )
 
-
     col1, col2 = st.columns(2)
-
 
     with col1:
 
@@ -938,14 +985,12 @@ elif page == "⚙️ Settings":
             CHUNK_SIZE,
         )
 
-
     with col2:
 
         st.metric(
             "Chunk Overlap",
             CHUNK_OVERLAP,
         )
-
 
     st.info(
         "Changing the embedding model, chunk size, "
